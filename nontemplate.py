@@ -1,59 +1,95 @@
 #!/usr/bin/env python
-""" nontemplate is not a templating language """
 
-class Element:
-    """ An element within a nontemplate document """
-    document = None
-    tag_name = None
-    element = None
+class DocumentTag:
     
-    def __init__(self, document, tag_name):
+    name = None
+    attrs = {}
+    elems = []
+    
+    def __init__(self, document, name):
+        self.name = name
         self.document = document
-        self.tag_name = tag_name 
+        self.tagged = False
         
     def __call__(self, *args, **kwargs):
-        self.element = lxml.etree.Element(self.tag_name, **kwargs)
+        self.attr = kwargs
+        
+        for a in args:
+            if type(a) is dict:
+                self.attrs.update(a)
+            elif type(a) in (unicode, str):
+                self.elems.append(a)
+            elif type(a) in (list, tuple):
+                self.elems += str(a)
+            else:
+                self.elems += a.elems
+            
         return self
     
     def __enter__(self):
-        self.document._enter(self)
-    
+        if not self.tagged:
+            self.document._tag(self.name)
+            self.tagged = True
+        self.document._rewind()
+            
     def __exit__(self, type, value, tb):
-        self.document._exit(self)
+        self.document._forward()
 
-    def open_tag(self):
-        return "<%s>" % self.tag_name
-    
-    def close_tag(self):
-        return "</%s>\n" % self.tag_name
+    def __str__(self):
+        return ( ("<%s" % self.name ) +
+            ''.join([ '%s="%s"' % x for x in self.attrs.iteritems() ]) +
+            ">" +
+            ''.join(self.elems) +
+            ("</%s>" % self.name)
+        )
     
 class Document:
-    """ A nontemplate document ... emits XML """
+
+    _head = []
+    _tail = []
     
-    def __init__(self, output):
-        self._output = output or ""
+    def _tag(self, tagname, *args, **kwargs):
+        opentag = "<%s" % tagname
+        for x,y in kwargs.iteritems():
+            opentag += ' %s="%s"' % ((x[1:] if x[0] == '_' else x), y)
+        opentag += ">"
+        self._head.append(opentag)
+        
+        for x in args:
+            if type(x) in (list, tuple):
+                self._head += list(x)
+            elif type(x) in (str, unicode):
+                self._head.append(x)
+            else:
+                x()
+                
+        self._head.append("</%s>\n" % tagname)
     
-    def _emit(self, text):        
-        if type(self._output) is str:
-            self.output += text
-        elif type(self._output) is list:
-            self._output.append(text)
-        else:
-            self._output(text)
-    
-    def _enter(self, element):
-        self._emit(element.open_tag())
-    
-    def _exit(self, element):
-        self._emit(element.close_tag())
-    
+    def _text(self, text):
+        self._head += [ text ]
+        
+    def _rewind(self):
+        self._tail.append(self._head.pop())
+        
+    def _forward(self):
+        self._head.append(self._tail.pop())
+            
     def __getattr__(self, name):
-        return Element(self, name)
+        return DocumentTag(self, name)
 
     def __repr__(self):
-        return "nontemplate Document Instance"
-    
-    def __str__(self):
-        return self._output
-    
+        return "Document Instance"
 
+    
+D = Document();
+
+with D.html:
+    D.head(D.title("foo"))
+    with D.body:
+        for y in range(0,3):
+            with D.p(_class="bar"):
+                for x in range(0,3):
+                    D.img(src="baz%d-%d.jpg" % (x,y))
+                    D.caption("Testing %d-%d" % (y,x))
+            
+print ''.join(D._head)
