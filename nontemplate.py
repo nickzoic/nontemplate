@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 
+def html_escape(text):
+    s = ''
+    for c in text:
+        if c == '&': s += '&amp;'
+        elif c == '<': s += '&lt;'
+        elif c == '>': s += '&gt;'
+        elif ord(c) > 127: s += '&#%d;' % ord(c)
+        else: s += c
+    return s
+    
 class Element:
     
     def __init__(self, document, name):
@@ -45,6 +55,12 @@ class Document:
         self._cursor.append(newelem)
         return newelem
     
+    def _text(self, text):
+        self._cursor.append(html_escape(text))
+    
+    def _emit(self, text):
+        self._cursor.append(text)
+        
     def __str__(self):
         return "\n".join(str(e) for e in self._cursor)
 
@@ -53,13 +69,16 @@ class Document:
 D = Document();
 
 with D.html:
-    D.head(D.title("foo"), D.meta("something"))
-    D.neck("ha ha ha")
+    with D.head:
+        D.title("foo")
+        D.meta("something")
     with D.body:
         for y in range(0,3):
             with D.p(_class = "bar"):
                 for x in range(0,3):
                     D.img(src="baz%d-%d.jpg" % (x,y))
-                    D.caption("Testing %d-%d" % (y,x))
+                    with D.caption:
+                        D._emit("&middot;")
+                        D._text("%d & %d" % (x,y))
             
 print str(D)
