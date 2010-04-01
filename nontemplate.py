@@ -1,84 +1,75 @@
-#!/usr/bin/env python
+DOCTYPE_HTML_2_0 = ['HTML', 'PUBLIC', '"-//IETF//DTD HTML//EN"']
+
+DOCTYPE_HTML_3_2 = ['HTML', 'PUBLIC', '"-//W3C//DTD HTML 3.2 Final//EN"']
+
+DOCTYPE_HTML_4_01_STRICT = ['HTML', 'PUBLIC', '"-//W3C//DTD HTML 4.01//EN"', '"http://www.w3.org/TR/html4/strict.dtd"']
+DOCTYPE_HTML_4_01_TRANSITIONAL = ['HTML', 'PUBLIC', '"-//W3C//DTD HTML 4.01 Transitional//EN"', '"http://www.w3.org/TR/html4/loose.dtd"']
+DOCTYPE_HTML_4_01_FRAMESET = ['HTML', 'PUBLIC', '"-//W3C//DTD HTML 4.01 Frameset//EN"', '"http://www.w3.org/TR/html4/frameset.dtd"']
+
+DOCTYPE_XHTML_1_STRICT = ['html','PUBLIC','"-//W3C//DTD XHTML 1.0 Strict//EN"', '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"']
+DOCTYPE_XHTML_1_TRANSITIONAL = ['html', 'PUBLIC', '"-//W3C//DTD XHTML 1.0 Transitional//EN"','"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"']
+DOCTYPE_XHTML_1_FRAMESET = ['html', 'PUBLIC', '"-//W3C//DTD XHTML 1.0 Frameset//EN"', '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd"']
+
+DOCTYPE_HTML_5 = ['html']
+
+
+HTML_ESCAPE_ENTITIES = { '<': '&lt;', '>': '&gt;', '&': '&amp;' }
 
 def html_escape(text):
-    s = ''
-    for c in text:
-        if c == '&': s += '&amp;'
-        elif c == '<': s += '&lt;'
-        elif c == '>': s += '&gt;'
-        elif ord(c) > 127: s += '&#%d;' % ord(c)
-        else: s += c
-    return s
+    return ''.join((
+        HTML_ESCAPE_ENTITIES.get(c, str(c)) if 32 <= ord(c) < 128 else "&#%d;" % ord(c)
+        for c in text
+    ))
+
+class Document:
     
-class Element:
+    _output = None
+    _intag = None
+    _stack = []
     
-    def __init__(self, document, name):
-        self.document = document
-        self.parent = document._cursor
-        self.children = []
-        self.name = name
-        self.attrs = []
-        print "INIT %s" % self.name
+    def __init__(self, output=None):
+        self._output = output
+    
+    def _emit(self, s):
+        self._output.write(s) 
+    
+    def _text(self, s):
+        self._emit(html_escape(s)+"\n")
+    
+    def _comment(self, s):
+        self._emit("<!-- " + html_escape(s) + " -->\n")
+    
+    def _doctype(self, *stuff):
+        self._emit("<!DOCTYPE " + (' '.join(stuff)) + ">\n")
         
+    def __getattr__(self, name):
+        if self._intag:
+            self._emit("/>\n")
+        self._emit("<%s" % name)
+        self._intag = name
+        return self
+    
+    def __call__(self, arg0=None, **kwargs):
+        if arg0 and not self._intag:
+            self._emit("<%s" % arg0)
+            
+        for k,v in kwargs.iteritems():
+            self._emit(' %s="%s"' % (k[1:] if k[0] == '_' else k, html_escape(v)))
+        
+        if arg0:
+            if self._intag:
+                self._emit(">%s</%s>\n" % (html_escape(arg0), self._intag))
+                self._intag = None
+            else:
+                self._intag = arg0
+            
+        return self
+    
     def __enter__(self):
-        print "ENTER %s" % self.name
-        self.document._cursor = self
+        self._emit(">\n")
+        self._stack.append(self._intag)
+        self._intag = None
     
     def __exit__(self, *stuff):
-        print "EXIT %s" % self.name
-        self.document._cursor = self.parent
-
-    def __call__(self, *args, **kwargs):
-        print "CALL %s" % self.name
-        self.attrs += [ (k[1:] if k[0] == '_' else k, v) for k, v in kwargs.iteritems() ]
-        self.children += args
-        return self
-        
-    def append(self, elem):
-        self.children.append(elem)
-
-    def __str__(self):
-        xml =  ("<%s" % self.name) + (''.join( ' %s="%s"' % (k, v) for k, v in self.attrs))
-        if self.children:
-            xml += ">" + (''.join( [str(e) for e in self.children] )) + ("</%s>\n" % self.name)
-        else:
-            xml += "/>\n";
-        return xml
-    
-class Document:
-
-    _cursor = []
-    
-    def __getattr__(self, name):
-        '''calling D.foo() causes this to be run ...'''
-        newelem = Element(self, name)
-        self._cursor.append(newelem)
-        return newelem
-    
-    def _text(self, text):
-        self._cursor.append(html_escape(text))
-    
-    def _emit(self, text):
-        self._cursor.append(text)
-        
-    def __str__(self):
-        return "\n".join(str(e) for e in self._cursor)
-
-#----------------------------------------------------------------------------
-
-D = Document();
-
-with D.html:
-    with D.head:
-        D.title("foo")
-        D.meta("something")
-    with D.body:
-        for y in range(0,3):
-            with D.p(_class = "bar"):
-                for x in range(0,3):
-                    D.img(src="baz%d-%d.jpg" % (x,y))
-                    with D.caption:
-                        D._emit("&middot;")
-                        D._text("%d & %d" % (x,y))
-            
-print str(D)
+        self._emit("</%s>\n" % self._stack.pop())
+        return False 
