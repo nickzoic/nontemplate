@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # nontemplate.py
 # Copyright (c) 2010 Nick Moore <nick@zoic.org>
 
@@ -20,17 +21,18 @@ def html_escape(text):
         for c in text
     ))
 
-class Document:
+from cStringIO import StringIO
 
-    _output = None
+class Document(object):
+
     _intag = None
     _stack = []
-
+    
     def __init__(self, output=None):
-        self._output = output
-
+        self._output = output or StringIO()
+    
     def _emit(self, s):
-        self._output.write(s) 
+        self._output.write(s)
 
     def _text(self, s):
         self._emit(html_escape(s)+"\n")
@@ -42,38 +44,33 @@ class Document:
         self._emit("<!DOCTYPE " + (' '.join(stuff)) + ">\n")
 
     def __getattr__(self, name):
-        if self._intag:
-            self._emit("/>\n")
-        self._emit("<%s" % name)
-        self._intag = name
-        return self
-
-    def __call__(self, arg0=None, **kwargs):
-        if arg0 and not self._intag:
-            self._emit("<%s" % arg0)
-
-        for k,v in kwargs.iteritems():
-            self._emit(' %s="%s"' % (k[1:] if k[0] == '_' else k, html_escape(v)))
-
-        if arg0:
+        
+        def newtagmethod(self, **kwargs):
             if self._intag:
-                self._emit(">%s</%s>\n" % (html_escape(arg0), self._intag))
-                self._intag = None
+                self._output.write("/>\n<" + name)
             else:
-                self._intag = arg0
-
-        return self
-
+                self._output.write('<' + name)
+            if kwargs:
+                for k,v in kwargs.iteritems():
+                    self._output.write(' %s="%s"' % (k[1:] if k[0] == '_' else k, html_escape(v)))
+            self._intag = name            
+            return self
+        
+        setattr(self.__class__, name, newtagmethod)
+        return getattr(self, name)
+    
     def __enter__(self):
-        self._emit(">\n")
+        self._output.write(">\n")
         self._stack.append(self._intag)
         self._intag = None
 
     def __exit__(self, *stuff):
-        self._emit("</%s>\n" % self._stack.pop())
+        self._output.write("</" + self._stack.pop() + ">\n")
         return False 
 
-
+    def __str__(self):
+        return self._output.getvalue()
+    
 #-----
 
 import sys
@@ -85,13 +82,15 @@ data = [
 
 def runme():
     for z in range(0,1000):
-        D = Document(sys.stdout)
-        with D.table:
+        D = Document()
+        with D.table():
             for a in data:
-                with D.tr:
+                with D.tr():
                     for b in a:
-                        with D.td:
+                        with D.td():
                             D._emit(b)
+        
+#runme()
 
 import cProfile
 cProfile.run('runme()','profile')
