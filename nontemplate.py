@@ -44,7 +44,6 @@ class Document(object):
         self._emit("<!DOCTYPE " + (' '.join(stuff)) + ">\n")
 
     def __getattr__(self, name):
-        
         def newtagmethod(self, **kwargs):
             if self._intag:
                 self._output.write("/>\n<" + name)
@@ -53,7 +52,7 @@ class Document(object):
             if kwargs:
                 for k,v in kwargs.iteritems():
                     self._output.write(' %s="%s"' % (k[1:] if k[0] == '_' else k, html_escape(v)))
-            self._intag = name            
+            self._intag = name
             return self
         
         setattr(self.__class__, name, newtagmethod)
@@ -89,12 +88,13 @@ def runme():
                     for b in a:
                         with D.td():
                             D._emit(b)
+        print str(D)
         
-#runme()
+runme()
 
-import cProfile
-cProfile.run('runme()','profile')
+#import cProfile
+#cProfile.run('runme()','profile')
 
-import pstats
-p = pstats.Stats('profile')
-p.sort_stats('cumulative').print_stats()
+#import pstats
+#p = pstats.Stats('profile')
+#p.sort_stats('cumulative').print_stats()
