@@ -1,0 +1,26 @@
+body {
+  font-family: sans-serif;
+}
+
+h1 {
+  text-align: center;
+  font-size: 16pt;
+  color: red;
+}
+
+div.caption {
+  text-align: center;
+  font-style: italic;
+  color: red;
+}
+
+h2 {
+  font-size: 14pt;
+  color: red
+}
+
+pre.code {
+  border: 1px solid black;
+  padding: 1em;
+  background: lightyellow;
+}

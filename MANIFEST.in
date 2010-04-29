@@ -1,0 +1,2 @@
+include *.txt
+include test_nontemplate.py

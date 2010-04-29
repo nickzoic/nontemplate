@@ -12,16 +12,22 @@ DOCTYPE_XHTML_1_TRANSITIONAL = ['html', 'PUBLIC', '"-//W3C//DTD XHTML 1.0 Transi
 DOCTYPE_XHTML_1_FRAMESET = ['html', 'PUBLIC', '"-//W3C//DTD XHTML 1.0 Frameset//EN"', '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd"']
 DOCTYPE_HTML_5 = ['html']
 
-
+# a very small list of entities to escape
 HTML_ESCAPE_ENTITIES = { '<': '&lt;', '>': '&gt;', '&': '&amp;' }
 
-def html_escape(text):
-    return ''.join((
-        HTML_ESCAPE_ENTITIES.get(c, str(c)) if 32 <= ord(c) < 128 else "&#%d;" % ord(c)
-        for c in text
-    ))
+import re
 
-from cStringIO import StringIO
+def html_escape(text):
+    return re.sub(r'([&<>])', lambda match: HTML_ESCAPE_ENTITIES[match.group(0)], text)
+
+def comment_escape(text):
+    return re.sub(r'-->', '-- >', text)
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+      
 
 class Document(object):
 
@@ -38,63 +44,53 @@ class Document(object):
         self._emit(html_escape(s)+"\n")
 
     def _comment(self, s):
-        self._emit("<!-- " + html_escape(s) + " -->\n")
+        self._emit("<!-- " + comment_escape(s) + " -->\n")
 
-    def _doctype(self, *stuff):
-        self._emit("<!DOCTYPE " + (' '.join(stuff)) + ">\n")
+    def _doctype(self, doctype):
+        self._emit("<!DOCTYPE " + (' '.join(doctype)) + ">\n")
 
     def __getattr__(self, name):
-        def newtagmethod(self, **kwargs):
+        def newtagmethod(self, *args, **kwargs):
             if self._intag:
-                self._output.write("/>\n<" + name)
+                self._emit("/>\n<" + name)
             else:
-                self._output.write('<' + name)
+                self._emit('<' + name)
             if kwargs:
                 for k,v in kwargs.iteritems():
-                    self._output.write(' %s="%s"' % (k[1:] if k[0] == '_' else k, html_escape(v)))
-            self._intag = name
-            return self
+                    self._emit(' %s="%s"' % (k[1:] if k[0] == '_' else k, html_escape(v)))
+            if args:
+	        self._emit(">\n")
+		for a in args:
+		    self._text(a)
+		self._emit("</%s>\n" % name)
+	        self._intag = None
+	        return None
+	    else:
+                self._intag = name
+            	return self
         
         setattr(self.__class__, name, newtagmethod)
         return getattr(self, name)
     
+    def __call__(self, text):
+        if self._intag:
+	    self._emit(">\n")
+	    self._text(text)
+	    self._emit("</%s>\n" % self._intag)
+	    self._intag = None
+	    return None
+	else:
+	    self._text(text)
+            return self
+
     def __enter__(self):
-        self._output.write(">\n")
+        self._emit(">\n")
         self._stack.append(self._intag)
         self._intag = None
 
     def __exit__(self, *stuff):
-        self._output.write("</" + self._stack.pop() + ">\n")
+        self._emit("</" + self._stack.pop() + ">\n")
         return False 
 
     def __str__(self):
         return self._output.getvalue()
-    
-#-----
-
-import sys
-
-data = [
-    [ str(x * 10 + y + 1) for y in range(0,10) ]
-    for x in range(0,100)
-]
-
-def runme():
-    for z in range(0,1000):
-        D = Document()
-        with D.table():
-            for a in data:
-                with D.tr():
-                    for b in a:
-                        with D.td():
-                            D._emit(b)
-        print str(D)
-        
-runme()
-
-#import cProfile
-#cProfile.run('runme()','profile')
-
-#import pstats
-#p = pstats.Stats('profile')
-#p.sort_stats('cumulative').print_stats()

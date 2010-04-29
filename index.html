@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+ <head>
+  <title>NonTemplate</title>
+  <link href="page.css" rel="stylesheet" type="text/css" />
+ </head>
+
+ <body>
+  <h1>NonTemplate</h1>
+  <div class="caption">Not another Python templating language</div>
+  
+  <h2>Summary</h2>
+  
+  <ul>
+   <li>
+     NonTemplate allows you to generate simple XML output directly in your Python
+     code with a minimum of syntactic noise.
+   </li>
+   <li>
+    it uses the
+    <a href="http://effbot.org/zone/python-with-statement.htm"><tt>with</tt></a>
+    statement introduced in <a href="http://python.org">Python</a> 2.5 to ensure
+    that once a tag is opened, it will be closed.
+   </li>
+   <li>
+    Python code and template codes can be interleaved naturally, without
+    resorting to restrictive language constructions.  Your favourite debugger
+    can see, and set breakpoints in, every level of your template.
+   </li>
+   <li>
+    100% pure Python (&gt;= 2.5), and it works just fine in Python 3.0 as well.
+   </li>
+   <li>
+    Performance is comparable to the commonly used templating languages and is
+    better than most.
+   </li>
+   <li>
+    Asyncronous use is easy: NonTemplate is happy reading from iterables and
+    writing to IO streams.  This means you can start sending XHTML to your clients
+    while your database is still retrieving rows ... 
+   </li>
+  </ul>
+  
+  <h2>Example</h2>
+  
+<pre class="code">   
+import nontemplate
+
+D = nontemplate.document
+with D.html():
+  D._comment("this is a test")
+  with D.head():
+    D.title("foo")
+  with D.body():
+    with D.h1(id="foo"):
+      D._text("This is a test")
+    with D.table(_class="cool"):
+      with D.tbody():
+	for row in range(1,11):
+	  with D.tr():
+	    for col in range(1,11):
+	      if row == col:
+	        D.td(_class="same")("%d" % row)
+	      else:
+	        D.td(_class="diff")("%d,%d" % (row,col))
+</pre>
+  
+  <h2>License</h2>
+  
+  <p>
+   NonTemplate is Copyright &copy; 2010 Nick Moore.  It is released under the MIT license.  See LICENSE.txt in the source distribution.
+  </p>
+   
+  <h2>History</h2>
+  
+  <p>
+   I first used <a href="http://search.cpan.org/dist/CGI.pm/">CGI.pm</a>
+   back in the dawn of Internet time (eg: 1999) and I was impressed by the
+   concept of 
+   <a href="http://search.cpan.org/dist/CGI.pm/lib/CGI.pm#CREATING_STANDARD_HTML_ELEMENTS:">embedding HTML code directly in Perl</a>,
+   if not the implementation.
+   In Python,
+   <a href="http://codespeak.net/lxml/lxmlhtml.html#creating-html-with-the-e-factory">lxml.etree's E-factory</a>
+   performs a similar job, but greatly restricts your flexibility with branching
+   and looping constructs.
+  </p>
+  
+  <p>
+   In the meantime, I've wrestled with
+   <a href="http://nick.zoic.org/category/programming/web-programming/templating-languages/">all sorts of templating languages in both Perl and Python</a>,
+   none of which have proved to be entirely pleasant to deal with.  They each provide a
+   <a href="http://en.wikipedia.org/wiki/Domain-specific_language">DSL</a>
+   of sorts, offering more or less complexity at more or less of a distance from the
+   'parent' language.
+  </p>
+  
+  <p>
+   One aim of template languages has always been to separate "coding" from "web design",
+   so that a web designer is not exposed to the full horror of actual code.  The parts
+   of the template code which intrude upon the HTML are generally marked up with strange
+   punctuation and the web designed could be warned not to touch those parts ... sometimes
+   this even worked!  However, in modern practice,
+   <a href="http://www.w3.org/Style/CSS/">Cascading Stylesheets</a> provide a separation
+   of content from presentation, rendering this point moot.
+  </p>
+  
+  <p>
+   One big inspiration for this project has been wrestling with the really quite daft
+   <a href="http://docs.djangoproject.com/en/1.0/topics/templates/">Django template</a>
+   engine.  Just for posterity, my least disliked Python template language is
+   <a href="http://www.makotemplates.org/">Mako</a>, mostly because it is the fastest
+   of the bunch, and it doesn't reinvent many wheels. 
+  </p>
+  
+  <p>
+   In a better world, this work would be in vain, because the only HTML you'd have
+   to write would be a wrapper to bootstrap a suitable
+   <a href="http://en.wikipedia.org/wiki/Ajax_%28programming%29">AJAX</a>
+   system and everything would be XML or JSON from there.  However, I still find
+   myself using template languages with regrettable regularity.
+  </p>
+  
+  <h2>Download & Install</h2>
+  
+  <p>
+   This project isn't quite released yet: A source package will be available here and on
+   <a href="http://pypi.python.org/pypi">PyPI</a> very soon.
+  </p>
+  
+ </body>
+</html>
