@@ -123,7 +123,7 @@ class Document(object):
 	
         if self._intag:   
             self._emit(">\n")
-	for text in *args:
+	for text in args:
 	    self._text(text)
         if self._intag:
 	    self._emit("</%s>\n" % self._intag)

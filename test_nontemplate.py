@@ -9,7 +9,7 @@ with D.html():
     D._comment("this --> is too")
     D._emit("<!-- testing & < > emit -->\n")
     with D.head():
-        D.title("foo")
+        D.title()("foo")
     with D.body():
         with D.h1(id="foo"):
 	    D._text("This is a <foo> & test")
@@ -18,7 +18,7 @@ with D.html():
                 for row in range(1,3):
                     with D.tr():
                         for col in range(1,3):
-                            D.td("%d,%d" % (row,col))
+                            D.td()("%d,%d" % (row,col))
 
 
 expected = """<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
