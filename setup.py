@@ -7,7 +7,7 @@ setup(
     author_email = "nick@zoic.org",
     url = "http://code.zoic.org/nontemplate/",
     description = "Nontemplate is not a Templating Language",
-    download_url = "http://code.zoic.org/nontemplate/nontemplate-0.1.tgz",
+    download_url = "http://code.zoic.org/nontemplate/dist/nontemplate-0.1.tar.gz",
     keywords = ["xml", "html", "template"],
     license = "MIT",
     classifiers=[
