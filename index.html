@@ -8,7 +8,16 @@
  <body>
   <h1>NonTemplate</h1>
   <div class="caption">Not another Python templating language</div>
-  
+
+  <h2>Version</h2>
+
+  <p>
+    I've started using this for one of my own projects:
+    inevitably this has found a bunch of bugs.  Thus, version 0.12,
+    which fixes the glaring bugs which you might have noticed in 0.1.
+    Usage has barely changed, other than the initializer kwargs.
+  </p>
+
   <h2>Summary</h2>
   
   <ul>
@@ -21,7 +30,7 @@
     it uses the
     <a href="http://effbot.org/zone/python-with-statement.htm"><tt>with</tt></a>
     statement
-    <a href="http://docs.python.org/whatsnew/2.5.html#pep-343-the-with-statement">introduced in Python 2.5</a>
+    <a href="http://docs.python.org/release/2.6.6/whatsnew/2.6.html#pep-343-the-with-statement">introduced in Python 2.6</a>
     to ensure that once a tag is opened, it will be closed.
    </li>
    <li>
@@ -30,7 +39,7 @@
     can see, and set breakpoints in, every level of your template.
    </li>
    <li>
-    100% pure Python (&gt;= 2.5), and it works just fine in Python 3.0 as well.
+    100% pure Python (&gt;= 2.6), and it works just fine in Python 3.0 as well.
    </li>
    <li>
     Performance is comparable to the commonly used templating languages and is
@@ -48,24 +57,33 @@
 <pre class="code">   
 import nontemplate
 
-D = nontemplate.document
+D = nontemplate.Document(doctype=nontemplate.doctype.html_2_0)
+
 with D.html():
-  D._comment("this is a test")
-  with D.head():
-    D.title("foo")
-  with D.body():
-    with D.h1(id="foo"):
-      D._text("This is a test")
-    with D.table(_class="cool"):
-      with D.tbody():
-	for row in range(1,11):
-	  with D.tr():
-	    for col in range(1,11):
-	      if row == col:
-	        D.td(_class="same")("%d" % row)
-	      else:
-	        D.td(_class="diff")("%d,%d" % (row,col))
+    D._comment("this is a test")
+    D._comment("this --&gt; is too")
+    D._emit("&lt;!-- testing &amp; &lt; &gt; emit --&gt;\n")
+    with D.head():
+        D.title()("foo")
+    with D.body():
+        with D.h1(id="foo"):
+            D._text("This is a &lt;foo&gt; &amp; test")
+        with D.table(_class="cool"):
+            with D.tbody():
+                for row in range(1,3):
+                    with D.tr():
+                        for col in range(1,3):
+                            D.td()("%d,%d" % (row,col))
+
 </pre>
+
+  <h3>Python 2.5</h3>
+
+  <p>
+    Nontemplate works fine in Python 2.5 but you have to include
+    <pre>from __future__ import with_statement</pre>
+    at the top of whatever module uses it.
+  </p>
   
   <h2>License</h2>
   
@@ -125,7 +143,7 @@ with D.html():
   <h2>Download & Install</h2>
   
   <ul>
-   <li><a href="dist/nontemplate-0.1.tar.gz">Source bundle (distutils)</a></li>
+   <li><a href="dist/nontemplate-0.12.tar.gz">Source bundle (distutils)</a></li>
    <li><a href="nontemplate.py">Source of nontemplate.py</a></li>
   </ul>
   

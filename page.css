@@ -16,7 +16,12 @@ div.caption {
 
 h2 {
   font-size: 14pt;
-  color: red
+  color: red;
+}
+
+h3 {
+  font-size: 12pt;
+  color: red;
 }
 
 pre.code {

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import with_statement
+
 import nontemplate
 
-D = nontemplate.Document()
-D._doctype(nontemplate.DOCTYPE_HTML_2_0)
+D = nontemplate.Document(doctype=nontemplate.doctype.html_2_0)
+
 with D.html():
     D._comment("this is a test")
     D._comment("this --> is too")
@@ -12,7 +14,7 @@ with D.html():
         D.title()("foo")
     with D.body():
         with D.h1(id="foo"):
-	    D._text("This is a <foo> & test")
+            D._text("This is a <foo> & test")
         with D.table(_class="cool"):
             with D.tbody():
                 for row in range(1,3):
@@ -24,7 +26,7 @@ with D.html():
 expected = """<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html>
 <!-- this is a test -->
-<!-- this -- > is too -->
+<!-- this --&gt; is too -->
 <!-- testing & < > emit -->
 <head>
 <title>
@@ -59,4 +61,9 @@ This is a &lt;foo&gt; &amp; test
 </html>
 """
 
-print "YAY" if str(D) == expected else str(D)
+if str(D) == expected:
+    print("YAY")
+else:
+    print("FAIL")
+    print(str(D))
+    exit(1)	

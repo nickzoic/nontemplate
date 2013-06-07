@@ -3,16 +3,13 @@
 # Copyright (c) 2010 Nick Moore <nick@zoic.org>
 
 import re
-
+from xml.sax.saxutils import escape, quoteattr
 
 try:
     from cStringIO import StringIO     # Python 2
 except ImportError:
     from io import StringIO            # Python 3
 
-
-# Somewhat nicer way of doing doctype strings ... could be improved further to have meaningful docstrings I suppose,
-# or maybe just use raw strings instead of little lists ...
 
 class doctype:
     '''Doctypes for nontemplate documents'''
@@ -27,29 +24,6 @@ class doctype:
     html_5 = 'html'
 
 
-# doing this myself is almost certainly a mistake.  Find somethign in the standard libraries which does it.
-HTML_ESCAPE_ENTITIES = { '<': '&lt;', '>': '&gt;', '&': '&amp;' }
-
-
-def html_escape(text):
-
-    '''Escapes & < > ... probably should handle unicode as well, translate
-    it into HTML unicode entities.'''
-    if type(text) in (int, float):
-        # ints and floats can't contain anything harmful already.
-        return str(text)
-    else:
-        return re.sub(r'([&<>])', lambda match: HTML_ESCAPE_ENTITIES[match.group(0)], str(text))
-
-
-def comment_escape(text):
-
-    '''Escapes --> in a comment, because that's the only thing we really
-    have to escape in a comment!'''
-
-    return re.sub(r'-->', '-- >', str(text))
-
-
 
 class Document(object):
 
@@ -62,6 +36,7 @@ class Document(object):
     _intag = None
     _stack = []
 
+
     def __init__(self, output=None, doctype=None):
 
         '''`output` is something which can be written to with .write().
@@ -71,6 +46,7 @@ class Document(object):
         self._output = output or StringIO()
         if doctype:
             self._doctype(doctype)
+
 
     def _emit(self, s):
 
@@ -84,7 +60,7 @@ class Document(object):
 
         '''Emit some text, escaping < and > and &'''
 
-        self._emit(html_escape(s)+"\n")
+        self._emit(escape(s)+"\n")
 
 
     def _attr(self, k, v):
@@ -96,7 +72,7 @@ class Document(object):
         elif v == False:
             self._emit(' %s=""' % k)
         else:
-            self._emit(' %s="%s"' % (k, html_escape(v)))
+            self._emit(' %s=%s' % (k, quoteattr(v)))
 
     
     def _comment(self, s):
@@ -104,7 +80,7 @@ class Document(object):
         '''Convenience method for emitting comments.  Escapes "-->"
         into "-- >"'''
 
-        self._emit("<!-- " + comment_escape(s) + " -->\n")
+        self._emit("<!-- " + escape(s) + " -->\n")
 
 
     def _doctype(self, doctype):
@@ -127,7 +103,7 @@ class Document(object):
             else:
                 self._emit('<' + name)
             if kwargs:
-                for k,v in kwargs.iteritems():
+                for k,v in kwargs.items():
                     self._attr(k[1:] if k[0] == '_' else k, v)
                     
             self._intag = name
